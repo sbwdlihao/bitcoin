@@ -29,6 +29,8 @@
 #include <vector>
 
 #include <atomic>
+#include "crypto/equihash.h"
+#include "net.h"
 
 class CBlockIndex;
 class CBlockTreeDB;
@@ -148,6 +150,11 @@ static const bool DEFAULT_PEERBLOOMFILTERS = true;
 
 /** Default for -stopatheight */
 static const int DEFAULT_STOPATHEIGHT = 0;
+
+// fixme 由于HEADER_SIZE,MAX_HEADERS_RESULTS,MAX_PROTOCOL_MESSAGE_LENGTH跟zcash不同，所以这个宏可能需要调整
+#define equihash_parameters_acceptable(N, K) \
+    ((CBlockHeader::HEADER_SIZE + equihash_solution_size(N, K))*MAX_HEADERS_RESULTS < \
+     MAX_PROTOCOL_MESSAGE_LENGTH-1000)
 
 struct BlockHasher
 {
