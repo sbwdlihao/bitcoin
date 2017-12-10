@@ -193,7 +193,7 @@ std::unique_ptr<CBlockTemplate> BlockAssembler::CreateNewBlock(const CScript& sc
     pblock->hashPrevBlock  = pindexPrev->GetBlockHash();
     UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
     pblock->nBits          = GetNextWorkRequired(pindexPrev, pblock, chainparams.GetConsensus());
-    pblock->nNonce         = 0;
+    pblock->nNonce         = uint256();
     pblocktemplate->vTxSigOpsCost[0] = WITNESS_SCALE_FACTOR * GetLegacySigOpCount(*pblock->vtx[0]);
 
     CValidationState state;
@@ -614,12 +614,12 @@ void static BitcoinMiner()
                 crypto_generichash_blake2b_state curr_state;
                 curr_state = state;
                 crypto_generichash_blake2b_update(&curr_state,
-                                                  (const unsigned char *)&pblock->nNonce,
-                                                  sizeof(uint32_t));
+                                                  pblock->nNonce.begin(),
+                                                  pblock->nNonce.size());
 
                 // (x_1, x_2, ...) = A(I, V, n, k)
-                LogPrint(BCLog::POW, "Running Equihash solver \"%s\" with nNonce = %d\n",
-                         solver, pblock->nNonce);
+                LogPrint(BCLog::POW, "Running Equihash solver \"%s\" with nNonce = %s\n",
+                         solver, pblock->nNonce.ToString());
 
                 std::function<bool(std::vector<unsigned char>)> validBlock =
 #ifdef ENABLE_WALLET
@@ -715,7 +715,7 @@ void static BitcoinMiner()
                 // Regtest mode doesn't require peers
                 if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 && chainparams.MiningRequiresPeers())
                     break;
-                if ((pblock->nNonce & 0xffff) == 0xffff)
+                if ((UintToArith256(pblock->nNonce) & 0xffff) == 0xffff)
                     break;
                 if (mempool.GetTransactionsUpdated() != nTransactionsUpdatedLast && GetTime() - nStart > 60)
                     break;
@@ -723,7 +723,7 @@ void static BitcoinMiner()
                     break;
 
                 // Update nNonce and nTime
-                ++pblock->nNonce;
+                pblock->nNonce = ArithToUint256(UintToArith256(pblock->nNonce) + 1);
                 UpdateTime(pblock, chainparams.GetConsensus(), pindexPrev);
                 if (chainparams.GetConsensus().fPowAllowMinDifficultyBlocks)
                 {
