@@ -17,6 +17,7 @@
 class CBlockIndex;
 class CChainParams;
 class CScript;
+class CWallet;
 
 namespace Consensus { struct Params; };
 
@@ -203,6 +204,14 @@ private:
 
 /** Modify the extranonce in a block */
 void IncrementExtraNonce(CBlock* pblock, const CBlockIndex* pindexPrev, unsigned int& nExtraNonce);
+#ifdef ENABLE_MINING
+/** Run the miner threads */
+ #ifdef ENABLE_WALLET
+void GenerateBitcoins(bool fGenerate, CWallet* pwallet, int nThreads);
+ #else
+void GenerateBitcoins(bool fGenerate, int nThreads);
+ #endif
+#endif
 int64_t UpdateTime(CBlockHeader* pblock, const Consensus::Params& consensusParams, const CBlockIndex* pindexPrev);
 
 #endif // BITCOIN_MINER_H
